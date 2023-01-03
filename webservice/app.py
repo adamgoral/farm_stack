@@ -1,14 +1,13 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fastapi import Body, FastAPI, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from typing import List
+from typing import List, Optional
 
 app = FastAPI()
-
-print('starting up')
+client = AsyncIOMotorClient(os.environ['MONGODB_URL'])
 
 @app.get("/")
 async def get_root():
@@ -27,9 +26,8 @@ class Match:
 @app.get("/sports/football/matches")
 async def get_football_matches():
     """Return a list of football matches."""
-    client = MongoClient(os.environ['MONGODB_URL'])
     db = client.football
-    matches = list(db.matches.find({}))
+    matches = await db.matches.find({}).to_list(None)
     for match in matches:
         match['id'] = str(match['_id'])
         del match['_id']
@@ -44,10 +42,9 @@ async def post_football_matches(matches: List[Match] = Body(...)):
         del match['id']
 
     print(f'type: {type(matches)}) value: {matches}')
-    client = MongoClient(os.environ['MONGODB_URL'])
     db = client.football
-    result = db.matches.insert_many(matches)
-    added_matches = list(db.matches.find({'_id': {'$in': result.inserted_ids}}))
+    result = await db.matches.insert_many(matches)
+    added_matches = await db.matches.find({'_id': {'$in': result.inserted_ids}}).to_list(None)
     print(f'added_matches: {added_matches}')
     for match in added_matches:
         match['id'] = str(match['_id'])
