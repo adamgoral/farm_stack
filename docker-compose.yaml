@@ -12,6 +12,7 @@ services:
       - ./webservice:/usr/src/app
     environment:
       - MONGODB_URL=mongodb://mongo/?retryWrites=true&w=majority
+      - MONGODB_DB=football
   mongo:
     image: mongo:6.0
     container_name: mongo

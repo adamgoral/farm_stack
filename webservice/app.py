@@ -8,11 +8,24 @@ from typing import List, Optional
 import datetime as dt
 
 app = FastAPI()
-client = AsyncIOMotorClient(os.environ['MONGODB_URL'])
+
+@app.on_event("startup")
+async def startup_event():
+    app.mongodb_client = AsyncIOMotorClient(os.environ['MONGODB_URL'])
+    app.mongodb = app.mongodb_client.football
+    collections = await app.mongodb.list_collection_names()
+    if 'prices' not in collections:
+        await create_ts('prices')
+    if 'matches' not in collections:
+        await app.mongodb.create_collection('matches')
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    app.mongodb_client.close()
 
 async def create_ts(collection_name: str):
     try:
-        await client.football.create_collection(collection_name,
+        await app.mongodb.create_collection(collection_name,
          timeseries={
             'timeField': 'timestamp',
             'granularity': 'seconds'
@@ -22,13 +35,12 @@ async def create_ts(collection_name: str):
 
 async def create_prices():
     await create_ts('prices')
-    db = client.football
     now = dt.datetime.now()
     prices = []
     for i in range(1, 11):
         prices.append({'timestamp': now + dt.timedelta(seconds=i), 'price': i})
 
-    return await db.prices.insert_many(prices)
+    return await app.mongodb.prices.insert_many(prices)
 
 @app.get("/")
 async def get_root():
@@ -38,8 +50,7 @@ async def get_root():
 @app.get("/sports/prices")
 async def get_prices():
     await create_ts('prices')
-    db = client.football
-    prices = await db.prices.find({}).to_list(None)
+    prices = await app.mongodb.prices.find({}).to_list(None)
     for price in prices:
         price['id'] = str(price['_id'])
         del price['_id']
@@ -49,8 +60,7 @@ async def get_prices():
 async def post_prices(prices: List[dict] = Body(...)):
     """Save a list of prices."""
     await create_ts('prices')
-    db = client.football
-    result = await db.prices.insert_many(prices)
+    result = await app.mongodb.prices.insert_many(prices)
     return JSONResponse(status_code=status.HTTP_201_CREATED)
 
 @dataclass
@@ -65,8 +75,7 @@ class Match:
 @app.get("/sports/football/matches")
 async def get_football_matches():
     """Return a list of football matches."""
-    db = client.football
-    matches = await db.matches.find({}).to_list(None)
+    matches = await app.mongodb.matches.find({}).to_list(None)
     for match in matches:
         match['id'] = str(match['_id'])
         del match['_id']
@@ -81,9 +90,8 @@ async def post_football_matches(matches: List[Match] = Body(...)):
         del match['id']
 
     print(f'type: {type(matches)}) value: {matches}')
-    db = client.football
-    result = await db.matches.insert_many(matches)
-    added_matches = await db.matches.find({'_id': {'$in': result.inserted_ids}}).to_list(None)
+    result = await app.mongodb.matches.insert_many(matches)
+    added_matches = await app.mongodb.matches.find({'_id': {'$in': result.inserted_ids}}).to_list(None)
     print(f'added_matches: {added_matches}')
     for match in added_matches:
         match['id'] = str(match['_id'])
