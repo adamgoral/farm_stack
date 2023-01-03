@@ -13,7 +13,7 @@ print('starting up')
 @app.get("/")
 async def get_root():
     """Return a simple status message."""
-    return {"status": "OK", "connection": os.environ['MONGODB_URL'] }
+    return { "status": "OK" }
 
 @dataclass
 class Match:
