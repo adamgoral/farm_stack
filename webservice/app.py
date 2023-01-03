@@ -5,14 +5,53 @@ from fastapi.responses import JSONResponse, Response
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from typing import List, Optional
+import datetime as dt
 
 app = FastAPI()
 client = AsyncIOMotorClient(os.environ['MONGODB_URL'])
+
+async def create_ts(collection_name: str):
+    try:
+        await client.football.create_collection(collection_name,
+         timeseries={
+            'timeField': 'timestamp',
+            'granularity': 'seconds'
+         })
+    except Exception as e:
+        print(f'create_ts: {e}')
+
+async def create_prices():
+    await create_ts('prices')
+    db = client.football
+    now = dt.datetime.now()
+    prices = []
+    for i in range(1, 11):
+        prices.append({'timestamp': now + dt.timedelta(seconds=i), 'price': i})
+
+    return await db.prices.insert_many(prices)
 
 @app.get("/")
 async def get_root():
     """Return a simple status message."""
     return { "status": "OK" }
+
+@app.get("/sports/prices")
+async def get_prices():
+    await create_ts('prices')
+    db = client.football
+    prices = await db.prices.find({}).to_list(None)
+    for price in prices:
+        price['id'] = str(price['_id'])
+        del price['_id']
+    return prices
+
+@app.post('/sports/prices')
+async def post_prices(prices: List[dict] = Body(...)):
+    """Save a list of prices."""
+    await create_ts('prices')
+    db = client.football
+    result = await db.prices.insert_many(prices)
+    return JSONResponse(status_code=status.HTTP_201_CREATED)
 
 @dataclass
 class Match:
