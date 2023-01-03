@@ -10,6 +10,8 @@ services:
       - 8000:8000
     volumes:
       - ./webservice:/usr/src/app
+    environment:
+      - MONGODB_URL=mongodb://mongo/?retryWrites=true&w=majority
   mongo:
     image: mongo:6.0
     container_name: mongo
