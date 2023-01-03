@@ -23,18 +23,18 @@ async def startup_event():
 async def shutdown_event():
     app.mongodb_client.close()
 
-async def create_ts(collection_name: str):
+async def create_ts(collection_name: str, granularity: str = 'seconds'):
     try:
         await app.mongodb.create_collection(collection_name,
          timeseries={
+            'metaField': 'metadata',
             'timeField': 'timestamp',
-            'granularity': 'seconds'
+            'granularity': granularity
          })
     except Exception as e:
         print(f'create_ts: {e}')
 
 async def create_prices():
-    await create_ts('prices')
     now = dt.datetime.now()
     prices = []
     for i in range(1, 11):
@@ -49,7 +49,6 @@ async def get_root():
 
 @app.get("/sports/prices")
 async def get_prices():
-    await create_ts('prices')
     prices = await app.mongodb.prices.find({}).to_list(None)
     for price in prices:
         price['id'] = str(price['_id'])
@@ -59,7 +58,6 @@ async def get_prices():
 @app.post('/sports/prices')
 async def post_prices(prices: List[dict] = Body(...)):
     """Save a list of prices."""
-    await create_ts('prices')
     result = await app.mongodb.prices.insert_many(prices)
     return JSONResponse(status_code=status.HTTP_201_CREATED)
 
