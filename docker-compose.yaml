@@ -1,6 +1,16 @@
 version: "3.8"
 
 services:
+  webclient:
+    build:
+      context: ./webclient
+      target: development
+    ports:
+      - 3000:3000
+    volumes:
+      - ./webclient/src:/usr/src/app/src
+    depends_on:
+      - webservice
   webservice:
     build:
       context: ./webservice
