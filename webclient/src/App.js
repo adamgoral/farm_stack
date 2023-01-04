@@ -1,13 +1,14 @@
-import logo from './logo.svg';
 import './App.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 function App() {
+  const [matches, setMatches] = useState([]);
+
   useEffect(() => {
     const fetchAllMatches = async () => {
       const response = await fetch('http://localhost:8000/sports/football/matches');
       const data = await response.json();
-      console.log(data);
+      setMatches(data);
     }
   
     const interval = setInterval(fetchAllMatches, 5000);
@@ -16,21 +17,12 @@ function App() {
   
   }, []);
 
+  // Pass a function to map
+  const items = matches.map(match => (<p>{match.home_team} vs {match.away_team} {match.home_goals}-{match.away_goals}</p>));
   return (
     <div className="App">
       <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
+        {items}
       </header>
     </div>
   );
