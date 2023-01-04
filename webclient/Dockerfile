@@ -3,8 +3,8 @@ ENV NODE_ENV development
 
 WORKDIR /usr/src/app
 
-COPY package*.json /usr/src/app
 COPY /public /usr/src/app/public
+COPY package*.json /usr/src/app
 
 RUN npm install
 
