@@ -1,7 +1,21 @@
 import logo from './logo.svg';
 import './App.css';
+import { useEffect } from 'react';
 
 function App() {
+  useEffect(() => {
+    const fetchAllMatches = async () => {
+      const response = await fetch('http://localhost:8000/sports/football/matches');
+      const data = await response.json();
+      console.log(data);
+    }
+  
+    const interval = setInterval(fetchAllMatches, 5000);
+  
+    return () => clearInterval(interval);
+  
+  }, []);
+
   return (
     <div className="App">
       <header className="App-header">
