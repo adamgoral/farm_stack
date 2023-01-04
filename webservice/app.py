@@ -8,18 +8,7 @@ import os
 from typing import List, Optional
 import datetime as dt
 
-origins = [
-    "http://localhost",
-    "http://localhost:3000"
-]
 app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
 
 @app.on_event("startup")
 async def startup_event():

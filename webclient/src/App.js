@@ -6,7 +6,7 @@ function App() {
 
   useEffect(() => {
     const fetchAllMatches = async () => {
-      const response = await fetch('http://localhost:8000/sports/football/matches');
+      const response = await fetch('/api/v1/sports/football/matches');
       const data = await response.json();
       setMatches(data);
     }
